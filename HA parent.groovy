@@ -51,6 +51,8 @@
 * 0.1.27 2021-04-11 Yves Mercier       Added option for secure connection
 * 0.1.28 2021-04-14 Dan Ogorchock      Improved Fan Device handling
 *
+* 2.1.28.1 2021-04-18 kkossev			Forked from ymerj/HE-HA-control github repository. First test version.
+*
 * Thank you(s):
 */
 
@@ -170,12 +172,56 @@ def parse(String description) {
         
         def domain = entity?.tokenize(".")?.getAt(0)
         def device_class = response?.event?.data?.new_state?.attributes?.device_class
+        if ( device_class == null ) {
+          device_class = "action"
+          response?.event?.data?.new_state?.attributes?.device_class = device_class
+        }
+
+        def isCustomDeviceProcesed = false
+        def customDevice = entity?.tokenize("_")?.getAt(2)
+        if ( customDevice != null )
+            log.warn("customDevice = ${customDevice}")
+            
         def friendly = response?.event?.data?.new_state?.attributes?.friendly_name
         newVals << response?.event?.data?.new_state?.state
         def mapping = null
         
         if (logEnable) log.debug "parse: domain: ${domain}, device_class: ${device_class}, entity: ${entity}, newVals: ${newVals}, friendly: ${friendly}"
         
+        
+        if ( customDevice != null ) {
+            switch (customDevice) {
+                case "xiaomioutlet":
+                    log.warn("FOUND customDevice = ${customDevice}")
+                    mapping = translateCustomDevices(customDevice, device_class, newVals, friendly)
+                    if (mapping) {
+                        updateCustomChildDevice(mapping, entity, friendly)      
+                        isCustomDeviceProcessed = true
+                    }
+                    break
+                case "miflora":
+                    log.warn("FOUND customDevice = ${customDevice}")
+                    mapping = translateCustomDevices(customDevice, device_class, newVals, friendly)
+                    if (mapping) {
+                        updateCustomChildDevice(mapping, entity, friendly)      
+                        isCustomDeviceProcessed = true
+                    }
+                    break
+                case "vibration":
+                    log.warn("FOUND customDevice = ${customDevice}")
+                    mapping = translateCustomDevices(customDevice, device_class, newVals, friendly)
+                    if (mapping) {
+                        updateCustomChildDevice(mapping, entity, friendly)      
+                        isCustomDeviceProcessed = true
+                    }
+                    break
+                default:
+                log.warn("UNKNOWN customDevice = ${customDevice}")
+                    break
+            }
+        }
+        
+        if ( isCustomDeviceProcessed != true ) {
         switch (domain) {
             case "fan":
                 def speed = response?.event?.data?.new_state?.attributes?.speed
@@ -218,10 +264,27 @@ def parse(String description) {
             case "binary_sensor":
             case "sensor":
                 mapping = translateDevices(device_class, newVals, friendly)
-                if (mapping) updateChildDevice(mapping, entity, friendly)                
+                if (mapping) {
+                    updateChildDevice(mapping, entity, friendly)  
+                }
+                else {
+                    log.info "No mapping exists for SENSOR: device_class: ${device_class}, newVals: ${newVals}, mapping: ${mapping}, entity: ${entity}, friendly: ${friendly}.  KKK!!!!!!!!!!!!!!!."
+                }
                 break
+            case "action":
+                mapping = translateDevices(device_class, newVals, friendly)
+                if (mapping) {
+                    updateChildDevice(mapping, entity, friendly)  
+                    log.info "mapped! :)  ACTION: device_class: ${device_class}, newVals: ${newVals}, mapping: ${mapping}, entity: ${entity}, friendly: ${friendly}.  KKK!!!!!!!!!!!!!!!."
+                }
+                else {
+                    log.info "No mapping exists for ACTION: device_class: ${device_class}, newVals: ${newVals}, mapping: ${mapping}, entity: ${entity}, friendly: ${friendly}.  KKK!!!!!!!!!!!!!!!."
+                }
+                break      
             default:
-                if (logEnable) log.info "No mapping exists for domain: ${domain}, device_class: ${device_class}.  Please contact devs to have this added."
+                //if (logEnable) 
+                log.info "No mapping exists for domain: ${domain}, device_class: ${device_class}.  Please contact devs to have this added."
+        }
         }
         return
     }  
@@ -230,6 +293,19 @@ def parse(String description) {
         return
     }
 }
+
+def translateCustomDevices(customDevice, device_class, newVals, friendly)
+{
+    def mapping =
+        [
+            xiaomioutlet: [type: "Generic Component Outlet",            event: [[name: device_class, value: newVals[0], descriptionText:"${friendly} "]]],
+            miflora: [type: "Generic Component MiFlora",                event: [[name: device_class, value: newVals[0], descriptionText:"${friendly} "]]],
+            vibration: [type: "Generic Component Vibration Sensor",     event: [[name: device_class, value: newVals[0], descriptionText:"${friendly} "]]]
+        ]
+
+    return mapping[customDevice]
+}
+
 
 def translateDevices(device_class, newVals, friendly)
 {
@@ -241,7 +317,9 @@ def translateDevices(device_class, newVals, friendly)
             humidity: [type: "Generic Component Humidity Sensor",       event: [[name: "humidity", value: newVals[0], descriptionText:"${friendly} humidity is ${newVals[0]}"]]],
             illuminance: [type: "Generic Component Illuminance Sensor", event: [[name: "illuminance", value: newVals[0], descriptionText:"${friendly} illuminance is ${newVals[0]}"]], namespace: "community"],
             light: [type: "Generic Component Dimmer",                   event: [[name: "switch", value: newVals[0], descriptionText:"${friendly} was turn ${newVals[0]}"],[name: "level", value: newVals[1], descriptionText:"${friendly} level was set to ${newVals[1]}"]]],
-            moisture: [type: "Generic Component Water Sensor",          event: [[name: "water", value: newVals[0] == "on" ? "wet":"dry", descriptionText:"${friendly} is updated"]]],
+            //moisture: [type: "Generic Component Water Sensor",          event: [[name: "water", value: newVals[0] == "on" ? "wet":"dry", descriptionText:"${friendly} is updated"]]],
+            moisture: [type: "Generic Component Moisture Sensor",       event: [[name: "moisture", value: newVals[0], descriptionText:"${friendly} moisture is ${newVals[0]}"]]],
+            power: [type: "Generic Component PowerX Sensor",             event: [[name: "power", value: newVals[0], descriptionText:"${friendly} power is ${newVals[0]}"]]],
             motion: [type: "Generic Component Motion Sensor",           event: [[name: "motion", value: newVals[0] == "on" ? """active""":"""inactive""", descriptionText:"${friendly} is updated"]]],
             opening: [type: "Generic Component Contact Sensor",         event: [[name: "contact", value: newVals[0] == "on" ? "open":"closed", descriptionText:"${friendly} is updated"]]],
             presence: [type: "Generic Component Presence Sensor",       event: [[name: "presence", value: newVals[0] == "on" ? "present":"not present", descriptionText:"${friendly} is updated"]]],
@@ -249,11 +327,47 @@ def translateDevices(device_class, newVals, friendly)
             switch: [type: "Generic Component Switch",                  event: [[name: "switch", value: newVals[0], descriptionText:"${friendly} was turn ${newVals[0]}"]]],
             temperature: [type: "Generic Component Temperature Sensor", event: [[name: "temperature", value: newVals[0], descriptionText:"${friendly} temperature is ${newVals[0]}"]]],
             voltage: [type: "Generic Component Voltage Sensor",         event: [[name: "voltage", value: newVals[0], descriptionText:"${friendly} voltage is ${newVals[0]}"]]],
-            window: [type: "Generic Component Contact Sensor",          event: [[name: "contact", value: newVals[0] == "on" ? "open":"closed", descriptionText:"${friendly} is updated"]]]
+            window: [type: "Generic Component Contact Sensor",          event: [[name: "contact", value: newVals[0] == "on" ? "open":"closed", descriptionText:"${friendly} is updated"]]],
+            //action: [type: "Generic Component Vibration Sensor",        event: [[name: "vibration", value: newVals[0], descriptionText:"${friendly} ${newVals[0]} is updated"]]],
+            action: [type: "Generic Component Vibration Sensor",        event: [[name: newVals[0], value: "changed", descriptionText:"${friendly} "]]],
+            battery: [type: "Generic Component Battery Sensor",         event: [[name: "battery", value: newVals[0], descriptionText:"${friendly} battery is ${newVals[0]}"]]],
+            conductivity: [type: "Generic Component pHMeasurement Sensor", event: [[name: "pH", value: newVals[0], descriptionText:"${friendly} pH is ${newVals[0]}"]], namespace: "community"]
         ]
 
     return mapping[device_class]
 }
+
+// KK
+def updateCustomChildDevice(mapping, entity, friendly) {
+    def ch = createCustomChild(mapping.type, entity, friendly, mapping.namespace)
+    if (!ch) {
+        log.warn "!!!!!!!!!!!!!!!!!!!!!!!!!!!! CustomChild type: ${mapping.type} not created for entity: ${entity}"
+        return
+    }
+    else {
+        ch.parse(mapping.event)
+    }
+}
+
+// KK
+def createCustomChild(deviceType, entity, friendly, namespace = null)
+{
+    log.warn "createChild: device.id: ${device.id} - entity: ${entity}"
+    String customEntity = entity
+    
+    def s1 = customEntity?.tokenize("._")
+    customEntity = s1[1]
+    log.warn " ##### customEntity[1]: ${customEntity} "
+    
+    def ch = getChildDevice("${device.id}-${customEntity}")
+    if (!ch) {
+        ch = addChildDevice(namespace ?: "hubitat", deviceType, "${device.id}-${customEntity}", [name: "${customEntity}", label: "${friendly}", isComponent: false])
+        ch.updateDataValue("originalEntity", entity)
+    }
+    return ch
+}
+
+
 
 def updateChildDevice(mapping, entity, friendly) {
     def ch = createChild(mapping.type, entity, friendly, mapping.namespace)
@@ -268,6 +382,7 @@ def updateChildDevice(mapping, entity, friendly) {
 
 def createChild(deviceType, entity, friendly, namespace = null)
 {
+    log.warn "createChild: device.id: ${device.id} - entity: ${entity}"
     def ch = getChildDevice("${device.id}-${entity}")
     if (!ch) ch = addChildDevice(namespace ?: "hubitat", deviceType, "${device.id}-${entity}", [name: "${entity}", label: "${friendly}", isComponent: false])
     return ch
@@ -278,6 +393,29 @@ def removeChild(entity){
     def ch = getChildDevice("${thisId}-${entity}")
     if (ch) {deleteChildDevice("${thisId}-${entity}")}
 }
+
+def customComponentOn(ch){
+    if (logEnable) log.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! received on request from ${ch.label}")
+    state.id = state.id + 1
+    entity = ch.name
+    domain = entity.tokenize(".")[0]
+
+    //
+    domain = "switch"
+    entity = ch.getDataValue("originalEntity")
+    log.info("xxxxxxxxxxxxxxxx! originalEntity:  ${entity}") 
+    //
+    
+    if (!ch.currentValue("level")) {
+        messOn = JsonOutput.toJson([id: state.id, type: "call_service", domain: "${domain}", service: "turn_on", service_data: [entity_id: "${entity}"]])
+    }
+    else {
+        messOn = JsonOutput.toJson([id: state.id, type: "call_service", domain: "${domain}", service: "turn_on", service_data: [entity_id: "${entity}", brightness_pct: "${ch.currentValue("level")}"]])        
+    }
+    if (logEnable) log.debug("messOn = ${messOn}")
+    interfaces.webSocket.sendMessage("${messOn}")
+}
+
 
 def componentOn(ch){
     if (logEnable) log.info("received on request from ${ch.label}")
@@ -292,6 +430,21 @@ def componentOn(ch){
     }
     if (logEnable) log.debug("messOn = ${messOn}")
     interfaces.webSocket.sendMessage("${messOn}")
+}
+
+def customComponentOff(ch){
+    if (logEnable) log.info("received off request from ${ch.label}")
+    state.id = state.id + 1
+    entity = ch.name
+    domain = entity.tokenize(".")[0]
+    //
+    domain = "switch"
+    entity = ch.getDataValue("originalEntity")
+    log.info("xxxxxxxxxxxxxxxx! originalEntity:  ${entity}") 
+    //
+    messOff = JsonOutput.toJson([id: state.id, type: "call_service", domain: "${domain}", service: "turn_off", service_data: [entity_id: "${entity}"]])
+    if (logEnable) log.debug("messOff = ${messOff}")
+    interfaces.webSocket.sendMessage("${messOff}")
 }
 
 def componentOff(ch){

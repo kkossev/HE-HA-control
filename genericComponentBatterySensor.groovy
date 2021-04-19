@@ -18,8 +18,8 @@ limitations under the License.
 
 Change history:
 
-0.1.13- @tomw - initial version
-0.1.13.1 - 2021-04-18 - kkossev - test
+0.1.13-     @tomw - initial template
+0.1.13.2 -  2021-04-19 - kkossev
 
 */
 
@@ -49,10 +49,9 @@ void installed() {
 void parse(String description) { log.warn "parse(String description) not implemented" }
 
 void parse(List<Map> description) {
-    log.info "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! BATTERY !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! parse... ${description} "
     description.each {
         if (it.name in ["battery"]) {
-            //if (txtEnable) 
+            if (txtEnable) 
                 log.info it.descriptionText
             sendEvent(it)
         }

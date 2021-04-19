@@ -20,12 +20,12 @@ Change history:
 
 0.1.13-     @tomw - initial template
 0.1.13.2 -  2021-04-19 - kkossev
-
+0.1.13.3 -  2021-04-19 - kkossev fixed importUrl: to genericComponentBatterySensor.groovy
 */
 
 metadata
 {
-    definition(name: "Generic Component Battery Sensor", namespace: "hubitat", author: "community", importUrl: "https://raw.githubusercontent.com/ymerj/HE-HA-control/main/genericComponentPressureSensor.groovy")
+    definition(name: "Generic Component Battery Sensor", namespace: "hubitat", author: "community", importUrl: "https://raw.githubusercontent.com/ymerj/HE-HA-control/main/genericComponentBatterySensor.groovy")
     {
         capability "Battery"
         capability "Refresh"

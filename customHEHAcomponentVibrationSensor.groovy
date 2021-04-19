@@ -20,17 +20,18 @@ Change history:
 
 0.1.13- @tomw - initial version
 0.1.13.1- 2021-04-18 @kkossev - test
+0.1.13.2- 2021-04-19 @kkossev - fixed importUrl:, code cleanup
 
 */
 
 metadata
 {
-    definition(name: "Generic Component Vibration Sensor", namespace: "hubitat", author: "community", importUrl: "https://raw.githubusercontent.com/ymerj/HE-HA-control/main/genericComponentPressureSensor.groovy")
+    definition(name: "Custom HEHA Component Vibration Sensor", namespace: "hubitat", author: "community", importUrl: "https://raw.githubusercontent.com/ymerj/HE-HA-control/main/customHEHAcomponentVibrationSensor.groovy")
     {
-		capability "Sensor"
+	capability "Sensor"
         capability "Refresh"
-   		capability "AccelerationSensor"    //acceleration - ENUM ["inactive", "active"]
-		capability "MotionSensor"        // motion - ENUM ["inactive", "active"]
+   	capability "AccelerationSensor"  // acceleration - ENUM ["inactive", "active"]
+	capability "MotionSensor"        // motion - ENUM ["inactive", "active"]
         capability "Battery"
 
     }
@@ -55,7 +56,7 @@ void installed() {
 void parse(String description) { log.warn "parse(String description) not implemented" }
 
 void parse(List<Map> description) {
-    log.info "!!!!!!!!!!!!!! Generic Component Vibration Sensor !!!!!!!!!!!!!!parse DESCRIPTION is... ${description} "
+    //log.info "parse DESCRIPTION is... ${description} "
     description.each {
         if (it.name in ["action" ]) {
             switch (it.value) {
@@ -84,7 +85,7 @@ void parse(List<Map> description) {
             it.descriptionText = it.descriptionText + it.name + " is " + it.value
             sendEvent(it)
         }
-        //log.debug it.descriptionText
+        log.debug it.descriptionText
     }
 }
 
@@ -96,18 +97,3 @@ void resetMotionEvent() {
     log.debug("resetMotionEvent()")
     sendEvent(name:"motion", value: "inactive", isStateChange: false, type: "digital", descriptionText: "$device.displayName motion was reset")
 }
-
-
-
-
-
-def active() {
-	sendEvent("name": "motion", "value":  "active", isStateChange: true)
-	if (txtEnable) log.info "$device.displayName motion changed to active [virtual]"
-}
-
-def inactive() {
-	sendEvent("name": "motion", "value":  "inactive", isStateChange: true)
-	if (txtEnable) log.info "$device.displayName motion changed to inactive [virtual]"
-}
-

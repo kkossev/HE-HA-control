@@ -20,18 +20,18 @@ Change history:
 
 0.1.13- @tomw - initial version
 0.1.13.1 2021-04-18 - @kkossev - test
-
+0.1.13.2 2021-04-19 - @kkossev - ranamed to customHEHAcomponentOutlet.groovy
 */
 
 metadata
 {
-    definition(name: "Generic Component Outlet", namespace: "hubitat", author: "community", importUrl: "https://raw.githubusercontent.com/ymerj/HE-HA-control/main/genericComponentPressureSensor.groovy")
+    definition(name: "Custom HEHA Component Outlet", namespace: "hubitat", author: "community", importUrl: "https://raw.githubusercontent.com/ymerj/HE-HA-control/main/customHEHAcomponentOutlet")
     {
         capability "Outlet"        //Attributes switch - ENUM ["on", "off"] Commands off() on()
         capability "EnergyMeter"   //Attributes energy - NUMBER, unit:kWh
         capability "PowerMeter"    // Attributes power - NUMBER, unit:W
         capability "Actuator"
-		capability "Sensor"
+	capability "Sensor"
         capability "Refresh"
 
         attribute "originalEntity", "String" 
@@ -42,13 +42,13 @@ metadata
 }
 
 void updated() {
-    log.info "Updated...Generic Component Outlet"
+    log.info "Updated...Custom HEHA Component Outlet"
     log.warn "description logging is: ${txtEnable == true}"
     state.LastActiveEvent = ""
 }
 
 void installed() {
-    log.info "Installed...Generic Component Outlet"
+    log.info "Installed...Custom HEHA Component Outlet"
     device.updateSetting("txtEnable",[type:"bool",value:true])
     refresh()
 }
@@ -56,7 +56,7 @@ void installed() {
 void parse(String description) { log.warn "parse(String description) not implemented" }
 
 void parse(List<Map> description) {
-    log.info "!!!!!!!!!!!!!! Generic Component Outlet !!!!!!!!!!!!!!parse DESCRIPTION is... ${description} "
+    //log.info "Custom HEHA Component Outlet -parse DESCRIPTION is... ${description} "
     
     description.each {
         if (it.name in ["consumption" ]) {
